@@ -47,6 +47,10 @@ options:
         default: 5
         description:
             - How long to wait for ovs-vswitchd to respond
+    vlan:
+        required: false
+        description:
+            - Set VLAN id of this port
 '''
 
 EXAMPLES = '''
@@ -62,6 +66,7 @@ class OVSPort(object):
         self.port = module.params['port']
         self.state = module.params['state']
         self.timeout = module.params['timeout']
+        self.vlan = module.params['vlan']
 
     def _vsctl(self, command):
         '''Run ovs-vsctl command'''
@@ -76,7 +81,10 @@ class OVSPort(object):
 
     def add(self):
         '''Add the port'''
-        rc, _, err = self._vsctl(['add-port', self.bridge, self.port])
+        arg = ['add-port', self.bridge, self.port]
+        if self.vlan:
+            arg.append('tag=%s' % self.vlan)
+        rc, _, err = self._vsctl(arg)
         if rc != 0:
             raise Exception(err)
 
@@ -122,7 +130,8 @@ def main():
             'bridge': {'required': True},
             'port': {'required': True},
             'state': {'default': 'present', 'choices': ['present', 'absent']},
-            'timeout': {'default': 5, 'type': 'int'}
+            'timeout': {'default': 5, 'type': 'int'},
+            'vlan': {'required': False},
         },
         supports_check_mode=True,
     )
