@@ -43,6 +43,14 @@ options:
         default: 5
         description:
             - How long to wait for ovs-vswitchd to respond
+    vlan:
+        required: false
+        description:
+            - Create a ``fake'' bridge. Set VLAN id of the bridge. A parent device must be specified if used.
+    parent:
+        required: false
+        defaults:
+            - Set parent device for a ``fake'' bridges, required for vlan bridges.
 '''
 
 EXAMPLES = '''
@@ -57,6 +65,8 @@ class OVSBridge(object):
         self.bridge = module.params['bridge']
         self.state = module.params['state']
         self.timeout = module.params['timeout']
+        self.parent = module.params['parent']
+        self.vlan = module.params['vlan']
 
     def _vsctl(self, command):
         '''Run ovs-vsctl command'''
@@ -73,7 +83,16 @@ class OVSBridge(object):
 
     def add(self):
         '''Create the bridge'''
-        rc, _, err = self._vsctl(['add-br', self.bridge])
+        arg = ['add-br', self.bridge]
+
+        if self.vlan and self.parent:
+            arg.extend([self.parent, self.vlan])
+        elif self.vlan and not self.parent:
+            raise Exception('vlan defined but not a parent.')
+        elif not self.vlan and self.parent:
+            raise Exception('parent defined but not a vlan.')
+
+        rc, _, err = self._vsctl(arg)
         if rc != 0:
             raise Exception(err)
 
@@ -118,7 +137,9 @@ def main():
         argument_spec={
             'bridge': {'required': True},
             'state': {'default': 'present', 'choices': ['present', 'absent']},
-            'timeout': {'default': 5, 'type': 'int'}
+            'timeout': {'default': 5, 'type': 'int'},
+            'vlan': {'required': False},
+            'parent': {'required': False},
         },
         supports_check_mode=True,
     )
