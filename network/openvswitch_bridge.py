@@ -50,7 +50,7 @@ options:
     parent:
         required: false
         defaults:
-            - Set parent device for a ``fake'' bridges, required for vlan bridges.
+            - Set parent device for a ``fake'' bridge, required for vlan bridges.
 '''
 
 EXAMPLES = '''
